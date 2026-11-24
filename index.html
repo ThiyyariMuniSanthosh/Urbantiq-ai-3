@@ -1,0 +1,2051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#07111f" />
+  <meta name="description" content="URBANIQ AI is a smart civic intelligence platform for reporting, mapping and resolving community issues." />
+  <title>URBANIQ AI — Intelligence for Better Communities</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="firebase-config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/13.4.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/13.4.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore-compat.js"></script>
+  <style>
+    :root {
+      --navy-950: #06101f;
+      --navy-900: #0a1628;
+      --navy-800: #112240;
+      --navy-700: #1d3557;
+      --teal-600: #0d9488;
+      --teal-500: #14b8a6;
+      --teal-400: #2dd4bf;
+      --teal-50: #f0fdfa;
+      --teal-100: #ccfbf1;
+      --bg-page: #f5f7fb;
+      --surface: #ffffff;
+      --surface-subtle: #f8fafc;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #64748b;
+      --border: rgba(15, 23, 42, 0.08);
+      --border-strong: rgba(15, 23, 42, 0.14);
+      --shadow-sm: 0 1px 2px rgba(10, 22, 40, 0.04);
+      --shadow-md: 0 8px 24px -6px rgba(10, 22, 40, 0.08), 0 2px 6px -1px rgba(10, 22, 40, 0.04);
+      --shadow-lg: 0 20px 44px -12px rgba(10, 22, 40, 0.14);
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --radius-pill: 9999px;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --warning: #d97706;
+      --warning-bg: #fffbeb;
+      --success: #059669;
+      --success-bg: #ecfdf5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulseDot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.35); opacity: 0.65; }
+    }
+    .animate-fade { animation: fadeUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(10, 22, 40, 0.92);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .navbar-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 20px;
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      cursor: pointer;
+    }
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--teal-400), var(--teal-600));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--navy-950);
+      box-shadow: 0 6px 18px rgba(20, 184, 166, 0.32);
+      flex-shrink: 0;
+    }
+    .brand-title {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      color: #ffffff;
+    }
+    .brand-sub {
+      font-size: 11px;
+      color: var(--teal-400);
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-pills {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .nav-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .nav-btn:hover { color: #ffffff; background: rgba(255, 255, 255, 0.08); }
+    .nav-btn.active {
+      background: #ffffff;
+      color: var(--navy-900);
+      font-weight: 600;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .mode-pill.demo {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.36);
+    }
+    .mode-pill.live {
+      background: rgba(20, 184, 166, 0.18);
+      color: #5eead4;
+      border-color: rgba(45, 212, 191, 0.42);
+    }
+    .mode-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      animation: pulseDot 2s infinite;
+    }
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .icon-btn:hover { background: rgba(255, 255, 255, 0.16); color: #ffffff; }
+
+    .role-btn {
+      padding: 6px 11px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.18s ease;
+    }
+    .role-btn:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    .mobile-menu-btn { display: none; }
+    .mobile-drawer {
+      display: none;
+      padding: 10px 20px 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--navy-900);
+      flex-direction: column;
+      gap: 6px;
+    }
+    .mobile-drawer.open { display: flex; }
+
+    .hero-strip {
+      background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-800) 60%, #0f3644 100%);
+      color: #ffffff;
+      padding: 26px 20px 30px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .hero-inner {
+      max-width: 1240px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .hero-title {
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+    }
+    .hero-desc {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .hero-stat-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(10px);
+      padding: 8px 14px;
+      border-radius: 14px;
+      min-width: 104px;
+    }
+    .hero-stat-val { font-size: 18px; font-weight: 700; color: #ffffff; line-height: 1.1; }
+    .hero-stat-lbl { font-size: 11px; color: var(--teal-400); margin-top: 2px; font-weight: 500; }
+
+    .container {
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px 20px 56px;
+      flex: 1;
+    }
+
+    .demo-banner {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      color: #92400e;
+      padding: 12px 16px;
+      border-radius: 14px;
+      font-size: 13px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+    .demo-banner strong { color: #78350f; }
+
+    .grid-citizen {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      transition: transform 0.22s ease, box-shadow 0.22s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    .card-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--navy-900);
+    }
+    .card-sub {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .form-group { margin-bottom: 15px; }
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .input, .select, .textarea {
+      width: 100%;
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border-strong);
+      background: var(--surface-subtle);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.18s ease;
+    }
+    .input:focus, .select:focus, .textarea:focus {
+      outline: none;
+      background: #ffffff;
+      border-color: var(--teal-600);
+      box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+    }
+    .textarea { resize: vertical; min-height: 86px; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 18px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      font-family: inherit;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--teal-600), #0f766e);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(13, 148, 136, 0.28);
+    }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(13, 148, 136, 0.36); }
+    .btn-navy {
+      background: var(--navy-900);
+      color: #ffffff;
+    }
+    .btn-navy:hover { background: var(--navy-800); }
+    .btn-soft {
+      background: var(--teal-50);
+      color: var(--teal-600);
+      border: 1px solid var(--teal-100);
+    }
+    .btn-soft:hover { background: var(--teal-100); }
+    .btn-outline {
+      background: #ffffff;
+      color: var(--text-primary);
+      border: 1px solid var(--border-strong);
+    }
+    .btn-outline:hover { background: var(--surface-subtle); }
+    .btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 9px; }
+    .btn-full { width: 100%; }
+
+    .ai-box {
+      background: linear-gradient(180deg, #f0fdfa 0%, #ffffff 100%);
+      border: 1px solid rgba(13, 148, 136, 0.25);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .ai-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .ai-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy-900);
+    }
+    .ai-result {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(13, 148, 136, 0.16);
+      font-size: 13px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-teal { background: var(--teal-50); color: #0f766e; border: 1px solid var(--teal-100); }
+    .badge-navy { background: #e2e8f0; color: var(--navy-900); }
+    .badge-amber { background: var(--warning-bg); color: #b45309; border: 1px solid #fde68a; }
+    .badge-red { background: var(--danger-bg); color: var(--danger); border: 1px solid #fecaca; }
+    .badge-green { background: var(--success-bg); color: var(--success); border: 1px solid #a7f3d0; }
+    .badge-blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+
+    .upload-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      border: 1.5px dashed rgba(13, 148, 136, 0.4);
+      background: var(--teal-50);
+      color: #0f766e;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+    }
+    .upload-box:hover { background: var(--teal-100); }
+
+    .map-box {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      background: #e2e8f0;
+      position: relative;
+    }
+    .map-picker { height: 220px; }
+    .map-full { height: 500px; }
+
+    .ticket-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      max-height: 520px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .ticket-item {
+      padding: 14px 16px;
+      border-radius: 15px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      transition: all 0.18s ease;
+    }
+    .ticket-item:hover { background: #ffffff; border-color: rgba(13, 148, 136, 0.35); box-shadow: var(--shadow-sm); }
+    .ticket-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .ticket-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; font-weight: 700; color: var(--teal-600); }
+    .ticket-title { font-size: 14px; font-weight: 600; color: var(--navy-900); margin-bottom: 4px; }
+    .ticket-meta { font-size: 12px; color: var(--text-muted); }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+    .kpi-val { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-top: 4px; color: var(--navy-900); }
+
+    .bar-row { margin-bottom: 12px; }
+    .bar-head { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
+    .bar-track { height: 8px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--teal-600), var(--teal-400)); transition: width 0.4s ease; }
+    .bar-fill.navy { background: linear-gradient(90deg, var(--navy-900), var(--navy-700)); }
+
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th {
+      text-align: left;
+      padding: 10px 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 12px;
+      border-bottom: 1px solid var(--border-strong);
+      background: var(--surface-subtle);
+    }
+    td { padding: 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:hover td { background: #f8fafc; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(6, 16, 31, 0.65);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-card {
+      background: #ffffff;
+      border-radius: 22px;
+      max-width: 440px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: var(--shadow-lg);
+      animation: fadeUp 0.22s ease;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 120;
+      background: var(--navy-900);
+      color: #ffffff;
+      padding: 12px 18px;
+      border-radius: 14px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: none;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid rgba(45, 212, 191, 0.3);
+    }
+    .toast.show { display: inline-flex; animation: fadeUp 0.2s ease; }
+    .toast.error { background: #991b1b; border-color: #fca5a5; }
+
+    .hidden { display: none !important; }
+    .error-msg {
+      background: var(--danger-bg);
+      color: var(--danger);
+      border: 1px solid #fecaca;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 960px) {
+      .nav-pills { display: none; }
+      .mobile-menu-btn { display: inline-flex; }
+      .grid-citizen { grid-template-columns: 1fr; }
+      .grid-3 { grid-template-columns: 1fr; }
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .role-btn { display: none; }
+      .card { padding: 18px; }
+      .map-full { height: 390px; }
+    }
+
+    /* ================================================================
+       URBANIQ AI 2.0 — premium civic command interface
+       Visual-only layer: existing IDs, forms, maps and app logic retained.
+       ================================================================ */
+    :root {
+      --navy-950: #050b16;
+      --navy-900: #081426;
+      --navy-800: #10223a;
+      --navy-700: #1a3552;
+      --teal-600: #12b8a6;
+      --teal-500: #28d7c2;
+      --teal-400: #69f0dc;
+      --teal-50: rgba(31, 213, 190, .10);
+      --teal-100: rgba(31, 213, 190, .18);
+      --bg-page: #07111f;
+      --surface: rgba(15, 29, 48, .88);
+      --surface-subtle: #0b192b;
+      --text-primary: #edf6ff;
+      --text-secondary: #b5c5d8;
+      --text-muted: #8195ad;
+      --border: rgba(159, 190, 220, .13);
+      --border-strong: rgba(159, 190, 220, .23);
+      --shadow-sm: 0 8px 24px rgba(0, 0, 0, .16);
+      --shadow-md: 0 18px 48px rgba(0, 0, 0, .22);
+      --shadow-lg: 0 28px 80px rgba(0, 0, 0, .34);
+      --radius-lg: 18px;
+      --radius-xl: 24px;
+    }
+
+    html { scroll-behavior: smooth; background: var(--bg-page); }
+    body {
+      position: relative;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 12% 8%, rgba(15, 160, 157, .13), transparent 34%),
+        radial-gradient(ellipse at 92% 22%, rgba(58, 111, 194, .12), transparent 32%),
+        linear-gradient(180deg, #07111f 0%, #091727 48%, #07111f 100%);
+      color: var(--text-primary);
+    }
+    body::before {
+      content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background-image: linear-gradient(rgba(135, 178, 210, .035) 1px, transparent 1px), linear-gradient(90deg, rgba(135, 178, 210, .035) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,.7), transparent 82%);
+    }
+    ::selection { background: rgba(45, 212, 191, .28); color: #fff; }
+    .navbar {
+      background: rgba(5, 13, 25, .78);
+      border-bottom: 1px solid rgba(119, 173, 208, .16);
+      box-shadow: 0 12px 36px rgba(0,0,0,.16);
+    }
+    .navbar-inner { max-width: 1440px; height: 76px; padding-inline: clamp(16px, 3vw, 38px); }
+    .brand { gap: 13px; }
+    .brand-icon {
+      width: 44px; height: 44px; border-radius: 15px;
+      background: linear-gradient(145deg, #6cf4df, #0c9f9a 72%);
+      color: #05202a; box-shadow: 0 0 0 6px rgba(45,212,191,.07), 0 12px 34px rgba(20,184,166,.25);
+    }
+    .brand-title { font-size: 17px; letter-spacing: .045em; }
+    .brand-sub { color: #82dacc; font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+    .nav-pills { background: rgba(255,255,255,.035); border-color: rgba(255,255,255,.08); border-radius: 15px; padding: 5px; }
+    .nav-btn { padding: 10px 15px; color: #a9bbcf; border-radius: 11px; font-size: 12px; letter-spacing: .01em; }
+    .nav-btn:hover { color: #fff; background: rgba(255,255,255,.08); }
+    .nav-btn.active { background: linear-gradient(135deg, #dffcf6, #a5f3e7); color: #06242b; box-shadow: 0 5px 18px rgba(45,212,191,.16); }
+    .mode-pill { padding: 8px 13px; letter-spacing: .08em; font-size: 10px; }
+    .icon-btn { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,.055); }
+    .role-btn { padding: 8px 12px; border-radius: 12px; color: #d2e0ed; }
+    .mobile-drawer { background: #081426; }
+
+    .hero-strip {
+      isolation: isolate; overflow: hidden; position: relative;
+      padding: clamp(42px, 6vw, 76px) clamp(18px, 3vw, 38px) clamp(38px, 5vw, 62px);
+      border-bottom: 1px solid rgba(122, 190, 204, .16);
+      background:
+        radial-gradient(circle at 82% 28%, rgba(39, 215, 194, .20), transparent 23%),
+        radial-gradient(circle at 68% 90%, rgba(47, 107, 177, .22), transparent 32%),
+        linear-gradient(112deg, #081426 0%, #0c2034 55%, #0a2934 100%);
+    }
+    .hero-strip::before, .hero-strip::after { content: ""; position: absolute; pointer-events: none; z-index: -1; }
+    .hero-strip::before {
+      width: 520px; height: 520px; right: -100px; top: -270px; border-radius: 50%;
+      border: 1px solid rgba(100, 236, 218, .16); box-shadow: 0 0 0 42px rgba(100,236,218,.025), 0 0 0 86px rgba(100,236,218,.02), 0 0 90px rgba(45,212,191,.08);
+      animation: orbitGlow 14s ease-in-out infinite alternate;
+    }
+    .hero-strip::after {
+      inset: 0; opacity: .25;
+      background-image: radial-gradient(rgba(191, 240, 240, .55) .7px, transparent .7px);
+      background-size: 22px 22px; mask-image: linear-gradient(90deg, transparent, black 70%);
+    }
+    .hero-inner { max-width: 1360px; gap: 30px; position: relative; z-index: 1; }
+    .hero-title { max-width: 760px; font-size: clamp(30px, 4.3vw, 54px); line-height: 1.04; letter-spacing: -.055em; font-weight: 780; text-wrap: balance; }
+    .hero-title::before { content: "CIVIC INTELLIGENCE PLATFORM  /  02.0"; display: block; margin-bottom: 17px; color: #65dfd0; font-size: 10px; line-height: 1.4; letter-spacing: .19em; font-weight: 800; }
+    .hero-desc { max-width: 650px; margin-top: 14px; color: #afc4d8; font-size: 15px; line-height: 1.75; }
+    .hero-stats { gap: 10px; }
+    .hero-stat-pill { min-width: 126px; padding: 15px 17px; border-radius: 17px; background: rgba(255,255,255,.055); border: 1px solid rgba(179,225,232,.15); box-shadow: inset 0 1px rgba(255,255,255,.06); backdrop-filter: blur(14px); }
+    .hero-stat-val { font-size: 25px; letter-spacing: -.04em; }
+    .hero-stat-lbl { color: #8bded3; font-size: 10px; text-transform: uppercase; letter-spacing: .09em; }
+
+    .container { max-width: 1440px; padding: 30px clamp(16px, 3vw, 38px) 72px; }
+    .demo-banner { background: rgba(113, 77, 19, .18); border: 1px solid rgba(245, 185, 74, .28); color: #f6d99b; border-radius: 16px; box-shadow: var(--shadow-sm); }
+    .demo-banner strong { color: #ffe8b6; }
+    .card, .kpi-card {
+      position: relative; overflow: hidden;
+      background: linear-gradient(145deg, rgba(17, 34, 55, .96), rgba(11, 25, 43, .96));
+      border: 1px solid rgba(145, 183, 211, .15);
+      border-radius: 23px; box-shadow: var(--shadow-md);
+      color: var(--text-primary);
+    }
+    .card { padding: clamp(18px, 2vw, 27px); }
+    .card::before, .kpi-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 1px; background: linear-gradient(90deg, transparent, rgba(116,239,222,.38), transparent); pointer-events: none; }
+    .card-hover:hover, .card:hover { transform: translateY(-3px); border-color: rgba(81, 222, 203, .28); box-shadow: 0 25px 65px rgba(0,0,0,.28); }
+    .card-title { color: #f0f7ff; font-size: 18px; letter-spacing: -.025em; }
+    .card-sub { color: #8fa5bb; line-height: 1.6; }
+    .form-label { color: #b7c9da; font-size: 11px; letter-spacing: .045em; text-transform: uppercase; }
+    .input, .select, .textarea {
+      background: rgba(4, 14, 27, .72); color: #e9f4ff; border: 1px solid rgba(142, 176, 204, .2);
+      border-radius: 13px; padding: 12px 14px; color-scheme: dark;
+    }
+    .input::placeholder, .textarea::placeholder { color: #627991; }
+    .input:focus, .select:focus, .textarea:focus { background: #09192b; border-color: #36cdbb; box-shadow: 0 0 0 4px rgba(45,212,191,.10), 0 0 24px rgba(45,212,191,.08); }
+    .btn { border-radius: 13px; font-weight: 700; letter-spacing: .01em; }
+    .btn-primary { background: linear-gradient(115deg, #42e2cd, #0fa99e 65%, #087c80); color: #03252b; box-shadow: 0 10px 28px rgba(20,184,166,.2), inset 0 1px rgba(255,255,255,.35); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 15px 32px rgba(20,184,166,.28); }
+    .btn-navy { background: #18334e; color: #e7f5ff; border: 1px solid rgba(159,197,219,.17); }
+    .btn-navy:hover { background: #234767; }
+    .btn-soft { background: rgba(45,212,191,.10); color: #74e6d8; border: 1px solid rgba(45,212,191,.22); }
+    .btn-soft:hover { background: rgba(45,212,191,.17); }
+    .btn-outline { background: rgba(255,255,255,.045); color: #d7e5f2; border: 1px solid rgba(159,190,220,.2); }
+    .btn-outline:hover { background: rgba(255,255,255,.09); }
+    .ai-box { background: linear-gradient(135deg, rgba(12, 92, 91, .22), rgba(13, 31, 49, .72)); border: 1px solid rgba(45,212,191,.25); border-radius: 18px; }
+    .ai-title { color: #b8fff2; }
+    .ai-result { border-color: rgba(45,212,191,.2); color: #c9e5e8; }
+    .upload-box { background: rgba(45,212,191,.07); color: #83e8db; border-color: rgba(45,212,191,.35); border-radius: 13px; }
+    .upload-box:hover { background: rgba(45,212,191,.14); }
+    .map-box { border-color: rgba(137,178,204,.23); box-shadow: inset 0 0 0 1px rgba(255,255,255,.025); }
+    .ticket-item { background: rgba(5, 16, 29, .62); border-color: rgba(146,183,207,.13); border-radius: 16px; }
+    .ticket-item:hover { background: rgba(15, 43, 59, .9); border-color: rgba(45,212,191,.3); }
+    .ticket-title { color: #e5f1fb; }
+    .ticket-meta { color: #8299b0; }
+    .ticket-id { color: #68e4d5; }
+    .kpi-card { padding: 21px 22px; }
+    .kpi-label { color: #8fa6bd; text-transform: uppercase; letter-spacing: .09em; font-size: 10px; }
+    .kpi-val { color: #f1f8ff; font-size: 34px; }
+    .bar-head { color: #c7d6e4; }
+    .bar-track { background: rgba(151,183,207,.13); height: 9px; }
+    .bar-fill { background: linear-gradient(90deg, #0fa99e, #5aecd7); box-shadow: 0 0 16px rgba(45,212,191,.25); }
+    .bar-fill.navy { background: linear-gradient(90deg, #315e91, #65a8dc); }
+    th { background: #0b1a2c; color: #91a8be; border-color: rgba(146,183,207,.16); }
+    td { color: #d2e0ec; border-color: rgba(146,183,207,.12); }
+    tr:hover td { background: rgba(255,255,255,.035); }
+    .modal-backdrop { background: rgba(1, 7, 15, .78); backdrop-filter: blur(12px); }
+    .modal-card { background: #0d1d30; border: 1px solid rgba(147,191,215,.2); color: #eaf5ff; }
+    .toast { background: #0d2435; border-color: rgba(45,212,191,.3); }
+    .mobile-drawer .nav-btn { justify-content: flex-start; }
+    .badge-teal { background: rgba(45,212,191,.12); color: #7be8d9; border-color: rgba(45,212,191,.22); }
+    .badge-navy { background: rgba(148,163,184,.16); color: #dce8f2; }
+    .badge-amber { background: rgba(245,158,11,.12); color: #f9ce7d; border-color: rgba(245,158,11,.24); }
+    .badge-red { background: rgba(248,113,113,.12); color: #ff9d9d; border-color: rgba(248,113,113,.24); }
+    .badge-green { background: rgba(52,211,153,.12); color: #7ce9bb; border-color: rgba(52,211,153,.24); }
+    .badge-blue { background: rgba(96,165,250,.12); color: #9acbff; border-color: rgba(96,165,250,.24); }
+    .error-msg { background: rgba(127,29,29,.25); color: #fecaca; border-color: rgba(248,113,113,.25); }
+    .map-full { min-height: 390px; }
+    .animate-fade { animation: premiumEnter .65s cubic-bezier(.2,.75,.2,1) both; }
+    .grid-citizen > *, .grid-2 > *, .grid-3 > *, .grid-4 > * { animation: premiumEnter .7s cubic-bezier(.2,.75,.2,1) both; }
+    .grid-citizen > *:nth-child(2) { animation-delay: .08s; }
+    .grid-4 > *:nth-child(2) { animation-delay: .05s; }
+    .grid-4 > *:nth-child(3) { animation-delay: .10s; }
+    .grid-4 > *:nth-child(4) { animation-delay: .15s; }
+    @keyframes premiumEnter { from { opacity: 0; transform: translateY(18px) scale(.99); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes orbitGlow { from { transform: translate3d(0,0,0) rotate(0deg); opacity: .65; } to { transform: translate3d(-28px,18px,0) rotate(8deg); opacity: 1; } }
+    @media (hover: hover) {
+      .card, .kpi-card, .ticket-item, .btn, .nav-btn { transition-duration: .28s; }
+    }
+    @media (max-width: 960px) {
+      .navbar-inner { height: 68px; }
+      .hero-inner { align-items: flex-start; }
+      .hero-stats { width: 100%; }
+      .hero-stat-pill { flex: 1; }
+    }
+    @media (max-width: 640px) {
+      .navbar-inner { padding-inline: 14px; gap: 8px; }
+      .brand-sub { max-width: 155px; font-size: 8px; }
+      .brand-icon { width: 39px; height: 39px; }
+      .nav-actions { gap: 6px; }
+      .mode-pill { padding: 7px 9px; font-size: 9px; }
+      .icon-btn { width: 35px; height: 35px; }
+      .hero-strip { padding: 38px 18px 32px; }
+      .hero-title { font-size: clamp(29px, 8vw, 39px); }
+      .hero-title::before { font-size: 8px; letter-spacing: .14em; }
+      .hero-desc { font-size: 13px; }
+      .hero-stats { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 7px; }
+      .hero-stat-pill { min-width: 0; padding: 12px 9px; }
+      .hero-stat-val { font-size: 20px; }
+      .hero-stat-lbl { font-size: 8px; letter-spacing: .04em; }
+      .container { padding: 20px 14px 48px; }
+      .card { border-radius: 19px; padding: 17px; }
+      .grid-4 { gap: 10px; }
+      .kpi-card { padding: 15px 13px; border-radius: 17px; }
+      .kpi-val { font-size: 27px; }
+      .kpi-label { font-size: 9px; }
+      .map-full { height: 390px; }
+      .ticket-list { max-height: 460px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="navbar-inner">
+      <div class="brand" onclick="switchTab('citizen')">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-title">URBANIQ AI</div>
+          <div class="brand-sub">Intelligence for Better Communities</div>
+        </div>
+      </div>
+
+      <nav class="nav-pills" id="desktopNav">
+        <button class="nav-btn active" data-tab="citizen" onclick="switchTab('citizen')">Citizen Portal</button>
+        <button class="nav-btn" data-tab="map" onclick="switchTab('map')">Interactive Map</button>
+        <button class="nav-btn" data-tab="admin" onclick="switchTab('admin')">Admin Dashboard</button>
+        <button class="nav-btn" data-tab="innovation" onclick="switchTab('innovation')">Innovation Centre</button>
+      </nav>
+
+      <div class="nav-actions">
+        <button id="modeBtn" class="mode-pill demo" onclick="toggleMode()">
+          <span class="mode-dot"></span>
+          <span id="modeText">DEMO MODE</span>
+        </button>
+        <button id="roleBtn" class="role-btn" onclick="toggleRole()">Role: Citizen</button>
+        <button class="icon-btn" title="Firebase Live Settings" onclick="openModal('configModal')">⚙</button>
+        <button id="authBtn" class="icon-btn" title="Sign In / Account" onclick="handleAuthButton()">👤</button>
+        <button class="icon-btn mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      </div>
+    </div>
+
+    <div class="mobile-drawer" id="mobileDrawer">
+      <button class="nav-btn active" data-tab="citizen" onclick="switchTab('citizen'); toggleMobileMenu(false)">Citizen Portal</button>
+      <button class="nav-btn" data-tab="map" onclick="switchTab('map'); toggleMobileMenu(false)">Interactive Map</button>
+      <button class="nav-btn" data-tab="admin" onclick="switchTab('admin'); toggleMobileMenu(false)">Admin Dashboard</button>
+      <button class="nav-btn" data-tab="innovation" onclick="switchTab('innovation'); toggleMobileMenu(false)">Innovation Centre</button>
+      <button class="nav-btn" onclick="toggleRole(); toggleMobileMenu(false)" id="mobileRoleBtn">Switch Role (Current: Citizen)</button>
+    </div>
+  </header>
+
+  <!-- Hero Banner -->
+  <section class="hero-strip">
+    <div class="hero-inner">
+      <div>
+        <h1 class="hero-title" id="heroTitle">Smart Civic Command & Citizen Intelligence</h1>
+        <p class="hero-desc" id="heroDesc">Report issues in Indian languages, auto-triage with AI Civic Intelligence, and track real-time municipal resolution.</p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat-pill">
+          <div class="hero-stat-val" id="heroTotal">0</div>
+          <div class="hero-stat-lbl">Tracked Issues</div>
+        </div>
+        <div class="hero-stat-pill">
+          <div class="hero-stat-val" id="heroResolved">0%</div>
+          <div class="hero-stat-lbl">Resolution Rate</div>
+        </div>
+        <div class="hero-stat-pill">
+          <div class="hero-stat-val" id="heroCritical">0</div>
+          <div class="hero-stat-lbl">High Priority</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container">
+    <div id="demoBanner" class="demo-banner">
+      <div>
+        <strong>Demo Mode Active:</strong> Sample civic reports and simulated AI triage are loaded for testing. Tap <strong>⚙</strong> in the top bar anytime to connect your always-on Firebase database.
+      </div>
+      <button class="btn btn-sm btn-navy" onclick="openModal('configModal')">Connect Firebase Live</button>
+    </div>
+
+    <!-- TAB 1: CITIZEN PORTAL -->
+    <section id="tab-citizen" class="animate-fade">
+      <div class="grid-citizen">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2 class="card-title">Report a Civic Issue</h2>
+              <p class="card-sub">Validated intake with AI classification, priority scoring & GPS pinning</p>
+            </div>
+            <select id="fLanguage" class="select" style="width:auto; padding:7px 10px; font-size:12px;">
+              <option value="English">English</option>
+              <option value="Telugu">తెలుగు (Telugu)</option>
+              <option value="Hindi">हिन्दी (Hindi)</option>
+              <option value="Tamil">தமிழ் (Tamil)</option>
+              <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+              <option value="Marathi">मराठी (Marathi)</option>
+            </select>
+          </div>
+
+          <div id="formError" class="error-msg hidden"></div>
+
+          <form id="complaintForm" onsubmit="submitComplaint(event)">
+            <div class="form-group">
+              <label class="form-label">Issue Title *</label>
+              <input id="fTitle" class="input" type="text" placeholder="e.g., Broken main water pipeline near Station Road" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Detailed Description *</label>
+              <textarea id="fDesc" class="textarea" placeholder="Describe the civic problem, landmark, and community impact..." required></textarea>
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label class="form-label">Municipal Ward</label>
+                <select id="fWard" class="select">
+                  <option>Ward 1 - Central</option>
+                  <option>Ward 2 - North Market</option>
+                  <option>Ward 3 - Tech Park</option>
+                  <option>Ward 4 - Lakeview</option>
+                  <option>Ward 5 - Station Road</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Photo Evidence</label>
+                <label class="upload-box">
+                  <span id="photoLabel">📷 Upload Photo (Auto-compressed)</span>
+                  <input id="fPhoto" type="file" accept="image/*" style="display:none" onchange="handlePhotoUpload(event)" />
+                </label>
+              </div>
+            </div>
+
+            <div id="photoPreviewWrap" class="form-group hidden">
+              <img id="photoPreview" alt="Uploaded evidence" style="width:100%; height:150px; object-fit:cover; border-radius:14px; border:1px solid var(--border-strong);" />
+            </div>
+
+            <div class="form-group">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <label class="form-label" style="margin:0;">Pin Location (<span id="coordLabel">13.6288, 79.4192</span>)</label>
+                <button type="button" class="btn btn-sm btn-soft" id="gpsBtn" onclick="useGPS()">📍 Use My GPS</button>
+              </div>
+              <p id="gpsStatus" class="card-sub" role="status" aria-live="polite" style="margin:0 0 8px;">GPS not used yet. You can also tap the map to pin the issue location.</p>
+              <div id="pickerMap" class="map-box map-picker"></div>
+            </div>
+
+            <div class="ai-box">
+              <div class="ai-header">
+                <div class="ai-title">✨ AI Civic Intelligence</div>
+                <button type="button" class="btn btn-sm btn-navy" id="aiBtn" onclick="runAITriage()">Analyze Issue</button>
+              </div>
+              <div id="aiResultBox" class="ai-result hidden"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+              Submit Complaint & Generate Tracking ID
+            </button>
+          </form>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:20px;">
+          <div class="card">
+            <h2 class="card-title" style="margin-bottom:10px;">Track Complaint Status</h2>
+            <div style="display:flex; gap:8px;">
+              <input id="trackInput" class="input" type="text" placeholder="Enter ID (e.g., UIQ-2026-1041)" oninput="renderTrackResult()" />
+            </div>
+            <div id="trackResult" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header" style="margin-bottom:12px;">
+              <div>
+                <h2 class="card-title">Recent Civic Reports</h2>
+                <p class="card-sub" id="recentCountLabel">Showing latest submissions</p>
+              </div>
+            </div>
+            <div id="recentTickets" class="ticket-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: INTERACTIVE MAP -->
+    <section id="tab-map" class="hidden animate-fade">
+      <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;">
+          <div>
+            <h2 class="card-title">Interactive Civic Map (OpenStreetMap)</h2>
+            <p class="card-sub">Color-coded markers by severity — tap any pin to inspect incident details</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <select id="mapFilterSev" class="select" style="width:auto; padding:8px 12px; font-size:12px;" onchange="renderFullMapMarkers()">
+              <option value="All">All Severities</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+            </select>
+            <select id="mapFilterStatus" class="select" style="width:auto; padding:8px 12px; font-size:12px;" onchange="renderFullMapMarkers()">
+              <option value="All">All Statuses</option>
+              <option value="Pending">Pending</option>
+              <option value="Assigned">Assigned</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+        <div id="fullMap" class="map-box map-full"></div>
+      </div>
+    </section>
+
+    <!-- TAB 3: ADMIN DASHBOARD -->
+    <section id="tab-admin" class="hidden animate-fade">
+      <div class="grid-4" style="margin-bottom:20px;">
+        <div class="kpi-card">
+          <div class="kpi-label">Total Complaints</div>
+          <div class="kpi-val" id="kpiTotal">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending Triage</div>
+          <div class="kpi-val" style="color:#d97706;" id="kpiPending">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Assigned / Active</div>
+          <div class="kpi-val" style="color:#0284c7;" id="kpiActive">0</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Resolved Issues</div>
+          <div class="kpi-val" style="color:#059669;" id="kpiResolved">0</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom:14px;">Department-Wise Workload</h3>
+          <div id="deptChart"></div>
+        </div>
+        <div class="card">
+          <h3 class="card-title" style="margin-bottom:14px;">Location / Ward Analytics</h3>
+          <div id="wardChart"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" style="flex-wrap:wrap;">
+          <div>
+            <h2 class="card-title">Municipal Operations Queue</h2>
+            <p class="card-sub">Assign departments, update live ticket status, and export governance reports</p>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <input id="adminSearch" class="input" style="width:200px; padding:8px 12px; font-size:12px;" placeholder="Search ID, title, ward..." oninput="renderAdminTable()" />
+            <button class="btn btn-sm btn-outline" onclick="window.print()">🖨 Print Summary</button>
+            <button class="btn btn-sm btn-soft" onclick="locateMeOnMap()">📍 Locate Me</button>
+            <button class="btn btn-sm btn-primary" onclick="exportCSV()">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Complaint ID</th>
+                <th>Issue & Ward</th>
+                <th>Department</th>
+                <th>Severity</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="adminTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: INNOVATION CENTRE -->
+    <section id="tab-innovation" class="hidden animate-fade">
+      <div class="grid-3">
+        <div class="card card-hover">
+          <span class="badge badge-teal" style="margin-bottom:12px;">Geospatial Intelligence</span>
+          <h2 class="card-title" style="margin-bottom:6px;">Civic Hotspot Detection</h2>
+          <p class="card-sub" style="margin-bottom:16px;">Auto-clustered municipal zone with highest active complaint concentration.</p>
+          <div style="background:var(--navy-900); color:#fff; padding:16px; border-radius:14px;">
+            <div style="font-size:11px; color:var(--teal-400); text-transform:uppercase; font-weight:700;">Primary Hotspot</div>
+            <div id="hotspotWard" style="font-size:18px; font-weight:700; margin-top:4px;">Ward 5 - Station Road</div>
+            <div id="hotspotCount" style="font-size:12px; color:#cbd5e1; margin-top:4px;">Clustered from active reports</div>
+          </div>
+        </div>
+
+        <div class="card card-hover">
+          <span class="badge badge-amber" style="margin-bottom:12px;">Experimental Beta</span>
+          <h2 class="card-title" style="margin-bottom:6px;">Predictive Maintenance</h2>
+          <p class="card-sub" style="margin-bottom:14px;">Forecasts recurring municipal asset failures from historical incident density.</p>
+          <ul id="predictiveList" style="padding-left:18px; font-size:13px; color:var(--text-secondary); display:flex; flex-direction:column; gap:10px;">
+            <li><strong>Water Board:</strong> High-pressure pipe stress detected along Lakeview corridor — schedule valve audit.</li>
+            <li><strong>Public Works:</strong> Recurring surface fatigue near Station Road junction — pre-monsoon resurfacing advised.</li>
+            <li><strong>Electrical:</strong> Feeder line voltage drop flagged near Tech Park pedestrian corridor.</li>
+          </ul>
+        </div>
+
+        <div class="card card-hover">
+          <span class="badge badge-green" style="margin-bottom:12px;">Community Impact</span>
+          <h2 class="card-title" style="margin-bottom:6px;">Civic Trust & Resolution</h2>
+          <p class="card-sub" style="margin-bottom:16px;">Measured transparency and closure efficiency across all municipal departments.</p>
+          <div id="impactScore" style="font-size:40px; font-weight:800; color:var(--teal-600); letter-spacing:-0.03em; line-height:1;">0%</div>
+          <p id="impactMeta" style="font-size:12px; color:var(--text-muted); margin-top:8px;">Resolution efficiency across tracked complaints</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Firebase Live Config Modal -->
+  <div id="configModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 class="card-title">Connect Always-On Firebase</h3>
+        <button class="btn btn-sm btn-outline" onclick="closeModal('configModal')">✕</button>
+      </div>
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:14px;">
+        Copy these 3 values from <strong>Firebase Console → Project Settings → Your apps (Web)</strong>. Free Spark plan never pauses.
+      </p>
+      <form onsubmit="saveFirebaseConfig(event)">
+        <div class="form-group">
+          <label class="form-label">Firebase API Key (apiKey)</label>
+          <input id="cfgApiKey" class="input" type="text" placeholder="AIzaSy..." required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Auth Domain (authDomain)</label>
+          <input id="cfgAuthDomain" class="input" type="text" placeholder="your-app.firebaseapp.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Project ID (projectId)</label>
+          <input id="cfgProjectId" class="input" type="text" placeholder="your-app-id" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Save & Activate Firebase Live Mode</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div id="authModal" class="modal-backdrop">
+    <div class="modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <h3 class="card-title" id="authModalTitle">Sign In to URBANIQ AI</h3>
+        <button class="btn btn-sm btn-outline" onclick="closeModal('authModal')">✕</button>
+      </div>
+      <div id="authError" class="error-msg hidden"></div>
+      <form onsubmit="submitAuth(event)">
+        <div class="form-group hidden" id="authNameWrap">
+          <label class="form-label">Full Name</label>
+          <input id="authName" class="input" type="text" placeholder="Your full name" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input id="authEmail" class="input" type="email" placeholder="citizen@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password (min 6 characters)</label>
+          <input id="authPass" class="input" type="password" placeholder="••••••" required />
+        </div>
+        <button type="submit" class="btn btn-primary btn-full" id="authSubmitBtn">Sign In</button>
+      </form>
+      <div style="text-align:center; margin-top:12px;">
+        <button type="button" style="background:none; border:none; color:var(--teal-600); font-size:12px; font-weight:600; cursor:pointer;" onclick="toggleAuthMode()" id="authToggleBtn">
+          Don't have an account? Create Citizen Account
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================================================================
+    // PERMANENT FIREBASE CONFIG (Paste your 3 values here to auto-connect)
+    // =========================================================================
+    const DEFAULT_FIREBASE_CONFIG = window.URBANIQ_FIREBASE_CONFIG || {
+      apiKey: "",
+      authDomain: "",
+      projectId: ""
+    };
+
+    const DEPARTMENTS = [
+      "Public Works",
+      "Sanitation",
+      "Water Board",
+      "Electrical",
+      "Stormwater",
+      "Municipal Enforcement"
+    ];
+    const STATUSES = ["Pending", "Assigned", "In Progress", "Resolved"];
+
+    const DEMO_COMPLAINTS = [
+      {
+        id: "UIQ-2026-1041",
+        citizen_name: "Ananya Rao",
+        title: "Deep pothole near Station Road junction",
+        description: "Large water-filled pothole causing two-wheeler skids during peak evening traffic.",
+        category: "Roads & Potholes",
+        department: "Public Works",
+        severity: "High",
+        priority_score: 88,
+        status: "Assigned",
+        ward: "Ward 5 - Station Road",
+        lat: 13.6288,
+        lng: 79.4192,
+        image_url: "",
+        language: "English",
+        ai_summary: "High-risk arterial road hazard near major transit junction requiring rapid cold-mix patching.",
+        is_duplicate: false,
+        created_at: new Date(Date.now() - 86400000 * 2).toISOString()
+      },
+      {
+        id: "UIQ-2026-1042",
+        citizen_name: "Karthik Reddy",
+        title: "Overflowing garbage bin beside North Market",
+        description: "Waste has not been cleared for 3 days, creating foul smell and stray animal congestion.",
+        category: "Waste Management",
+        department: "Sanitation",
+        severity: "Medium",
+        priority_score: 69,
+        status: "Pending",
+        ward: "Ward 2 - North Market",
+        lat: 13.6352,
+        lng: 79.4241,
+        image_url: "",
+        language: "Telugu",
+        ai_summary: "Sanitation backlog at commercial market zone; dispatch compactor truck on priority route.",
+        is_duplicate: false,
+        created_at: new Date(Date.now() - 86400000 * 1.5).toISOString()
+      },
+      {
+        id: "UIQ-2026-1043",
+        citizen_name: "Meera Nair",
+        title: "Broken main water pipeline flooding lane",
+        description: "Continuous clean water leakage near Lakeview Cross since early morning.",
+        category: "Water Supply & Leaks",
+        department: "Water Board",
+        severity: "Critical",
+        priority_score: 95,
+        status: "In Progress",
+        ward: "Ward 4 - Lakeview",
+        lat: 13.6215,
+        lng: 79.4128,
+        image_url: "",
+        language: "English",
+        ai_summary: "Critical potable water main rupture with high loss volume; immediate valve isolation required.",
+        is_duplicate: false,
+        created_at: new Date(Date.now() - 3600000 * 8).toISOString()
+      },
+      {
+        id: "UIQ-2026-1044",
+        citizen_name: "Suresh Babu",
+        title: "Five consecutive streetlights out near Tech Park",
+        description: "Entire pedestrian stretch is pitch dark after 7 PM, unsafe for commuters.",
+        category: "Streetlights & Power",
+        department: "Electrical",
+        severity: "High",
+        priority_score: 81,
+        status: "Resolved",
+        ward: "Ward 3 - Tech Park",
+        lat: 13.6410,
+        lng: 79.4310,
+        image_url: "",
+        language: "Hindi",
+        ai_summary: "Feeder-line outage affecting 5 LED poles; public safety lighting restoration completed.",
+        is_duplicate: false,
+        created_at: new Date(Date.now() - 86400000 * 4).toISOString()
+      },
+      {
+        id: "UIQ-2026-1045",
+        citizen_name: "Divya Sharma",
+        title: "Clogged stormwater drain near Central Bus Stand",
+        description: "Plastic debris blocking culvert causing stagnant water on footpath.",
+        category: "Drainage & Flooding",
+        department: "Stormwater",
+        severity: "Medium",
+        priority_score: 72,
+        status: "Pending",
+        ward: "Ward 1 - Central",
+        lat: 13.6299,
+        lng: 79.4265,
+        image_url: "",
+        language: "English",
+        ai_summary: "Blocked stormwater grate creating pre-monsoon flooding risk in high-footfall transit hub.",
+        is_duplicate: false,
+        created_at: new Date(Date.now() - 3600000 * 14).toISOString()
+      }
+    ];
+
+    function getSavedFirebaseConfig() {
+      try {
+        const raw = localStorage.getItem("urbaniq_firebase_cfg");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.apiKey && parsed.projectId) return parsed;
+        }
+      } catch (e) {}
+      if (DEFAULT_FIREBASE_CONFIG.apiKey && DEFAULT_FIREBASE_CONFIG.projectId) {
+        return DEFAULT_FIREBASE_CONFIG;
+      }
+      return null;
+    }
+
+    // App State
+    let fbConfig = getSavedFirebaseConfig();
+    let fbApp = null;
+    let fbAuth = null;
+    let fbDb = null;
+    let unsubscribeLive = null;
+
+    let mode = fbConfig ? "LIVE" : "DEMO";
+    let role = "citizen";
+    let activeTab = "citizen";
+    let currentUser = { name: "Demo Citizen", email: "citizen@urbaniq.ai" };
+    let authIsSignup = false;
+    let complaints = [...DEMO_COMPLAINTS];
+    let pickedCoords = { lat: 13.6288, lng: 79.4192 };
+    let pickedAccuracyM = null;
+    let pickedLocationSource = "default-map-center";
+    let photoDataUrl = "";
+    let currentAIResult = null;
+
+    let pickerMap = null;
+    let pickerMarker = null;
+    let fullMap = null;
+    let fullMapLayer = null;
+    let userLocationMarker = null;
+
+    function initFirebase() {
+      if (!fbConfig || !fbConfig.apiKey || !fbConfig.projectId || typeof firebase === "undefined") {
+        return false;
+      }
+      try {
+        const appName = "urbaniq-" + fbConfig.projectId;
+        const existing = firebase.apps.find((a) => a.name === appName);
+        fbApp = existing || firebase.initializeApp(fbConfig, appName);
+        fbAuth = fbApp.auth();
+        fbDb = fbApp.firestore();
+
+        fbAuth.onAuthStateChanged((u) => {
+          if (mode === "LIVE") {
+            currentUser = u
+              ? { id: u.uid, email: u.email, name: u.displayName || u.email.split("@")[0] }
+              : null;
+          }
+        });
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
+    }
+
+    function subscribeLiveComplaints() {
+      if (!fbDb) return;
+      if (unsubscribeLive) unsubscribeLive();
+
+      unsubscribeLive = fbDb
+        .collection("complaints")
+        .orderBy("created_at", "desc")
+        .onSnapshot(
+          (snapshot) => {
+            complaints = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+            renderAll();
+          },
+          (err) => {
+            showToast("Firestore error: " + (err.message || "Check Firestore Rules"), true);
+          }
+        );
+    }
+
+    function showToast(msg, isError = false) {
+      const el = document.getElementById("toast");
+      el.textContent = (isError ? "⚠ " : "✓ ") + msg;
+      el.className = "toast show" + (isError ? " error" : "");
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => { el.className = "toast"; }, 3400);
+    }
+
+    function openModal(id) {
+      if (id === "configModal") {
+        document.getElementById("cfgApiKey").value = fbConfig?.apiKey || "";
+        document.getElementById("cfgAuthDomain").value = fbConfig?.authDomain || "";
+        document.getElementById("cfgProjectId").value = fbConfig?.projectId || "";
+      }
+      document.getElementById(id).classList.add("open");
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove("open");
+    }
+
+    function toggleMobileMenu(force) {
+      const drawer = document.getElementById("mobileDrawer");
+      if (typeof force === "boolean") drawer.classList.toggle("open", force);
+      else drawer.classList.toggle("open");
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      ["citizen", "map", "admin", "innovation"].forEach((t) => {
+        document.getElementById("tab-" + t).classList.toggle("hidden", t !== tab);
+      });
+      document.querySelectorAll(".nav-btn[data-tab]").forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.tab === tab);
+      });
+
+      const titles = {
+        citizen: ["Smart Civic Command & Citizen Intelligence", "Report issues in Indian languages, auto-triage with AI, and track real-time municipal resolution."],
+        map: ["Geospatial Civic Operations Map", "Inspect active municipal complaints across wards using OpenStreetMap."],
+        admin: ["Civic Administration & Analytics", "Monitor department workload, assign field teams, and export compliance reports."],
+        innovation: ["URBANIQ Innovation Centre", "Hotspot clustering, community impact scoring, and predictive infrastructure maintenance."]
+      };
+      document.getElementById("heroTitle").textContent = titles[tab][0];
+      document.getElementById("heroDesc").textContent = titles[tab][1];
+
+      if (tab === "map") {
+        setTimeout(() => {
+          initFullMap();
+          if (fullMap) fullMap.invalidateSize();
+          renderFullMapMarkers();
+        }, 120);
+      }
+      if (tab === "citizen" && pickerMap) {
+        setTimeout(() => pickerMap.invalidateSize(), 120);
+      }
+      renderAll();
+    }
+
+    function toggleRole() {
+      role = role === "citizen" ? "admin" : "citizen";
+      const label = role === "admin" ? "Civic Admin" : "Citizen";
+      document.getElementById("roleBtn").textContent = "Role: " + label;
+      document.getElementById("mobileRoleBtn").textContent = "Switch Role (Current: " + label + ")";
+      switchTab(role === "admin" ? "admin" : "citizen");
+      showToast("Switched to " + label + " view");
+    }
+
+    function toggleMode() {
+      if (mode === "DEMO") {
+        if (!initFirebase()) {
+          openModal("configModal");
+          showToast("Add your Firebase config first", true);
+          return;
+        }
+        mode = "LIVE";
+        currentUser = fbAuth.currentUser
+          ? { id: fbAuth.currentUser.uid, email: fbAuth.currentUser.email, name: fbAuth.currentUser.displayName || fbAuth.currentUser.email.split("@")[0] }
+          : null;
+        subscribeLiveComplaints();
+        showToast("Connected to Live Firebase!");
+      } else {
+        if (unsubscribeLive) { unsubscribeLive(); unsubscribeLive = null; }
+        mode = "DEMO";
+        complaints = [...DEMO_COMPLAINTS];
+        currentUser = { name: "Demo Citizen", email: "citizen@urbaniq.ai" };
+        showToast("Switched to Demo Mode");
+      }
+      updateModeUI();
+      renderAll();
+    }
+
+    function updateModeUI() {
+      const btn = document.getElementById("modeBtn");
+      const txt = document.getElementById("modeText");
+      const banner = document.getElementById("demoBanner");
+      if (mode === "LIVE") {
+        btn.className = "mode-pill live";
+        txt.textContent = "LIVE MODE";
+        banner.classList.add("hidden");
+      } else {
+        btn.className = "mode-pill demo";
+        txt.textContent = "DEMO MODE";
+        banner.classList.remove("hidden");
+      }
+    }
+
+    function saveFirebaseConfig(e) {
+      e.preventDefault();
+      const apiKey = document.getElementById("cfgApiKey").value.trim();
+      const authDomain = document.getElementById("cfgAuthDomain").value.trim();
+      const projectId = document.getElementById("cfgProjectId").value.trim();
+
+      fbConfig = { apiKey, authDomain, projectId };
+      localStorage.setItem("urbaniq_firebase_cfg", JSON.stringify(fbConfig));
+      closeModal("configModal");
+
+      if (initFirebase()) {
+        mode = "LIVE";
+        updateModeUI();
+        subscribeLiveComplaints();
+        showToast("Firebase Live Mode activated!");
+      } else {
+        mode = "DEMO";
+        updateModeUI();
+        showToast("Could not initialize Firebase — check your 3 values", true);
+      }
+      renderAll();
+    }
+
+    function handleAuthButton() {
+      if (currentUser && mode === "LIVE") {
+        if (confirm("Sign out of " + currentUser.email + "?")) {
+          fbAuth?.signOut();
+          currentUser = null;
+          showToast("Signed out");
+        }
+      } else {
+        openModal("authModal");
+      }
+    }
+
+    function toggleAuthMode() {
+      authIsSignup = !authIsSignup;
+      document.getElementById("authModalTitle").textContent = authIsSignup ? "Create Citizen Account" : "Sign In to URBANIQ AI";
+      document.getElementById("authSubmitBtn").textContent = authIsSignup ? "Sign Up" : "Sign In";
+      document.getElementById("authNameWrap").classList.toggle("hidden", !authIsSignup);
+      document.getElementById("authToggleBtn").textContent = authIsSignup
+        ? "Already have an account? Sign In"
+        : "Don't have an account? Create Citizen Account";
+    }
+
+    async function submitAuth(e) {
+      e.preventDefault();
+      const email = document.getElementById("authEmail").value.trim();
+      const password = document.getElementById("authPass").value;
+      const name = document.getElementById("authName").value.trim();
+      const errBox = document.getElementById("authError");
+      errBox.classList.add("hidden");
+
+      if (!email || password.length < 6) {
+        errBox.textContent = "Enter a valid email and a password of at least 6 characters.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      if (mode === "DEMO") {
+        currentUser = { name: name || email.split("@")[0], email };
+        closeModal("authModal");
+        showToast("Signed in (Demo Mode)");
+        return;
+      }
+
+      try {
+        if (authIsSignup) {
+          const cred = await fbAuth.createUserWithEmailAndPassword(email, password);
+          if (name) await cred.user.updateProfile({ displayName: name });
+          currentUser = { id: cred.user.uid, email: cred.user.email, name: name || email.split("@")[0] };
+          showToast("Citizen account created!");
+        } else {
+          const cred = await fbAuth.signInWithEmailAndPassword(email, password);
+          currentUser = {
+            id: cred.user.uid,
+            email: cred.user.email,
+            name: cred.user.displayName || cred.user.email.split("@")[0]
+          };
+          showToast("Signed in to Live Mode!");
+        }
+        closeModal("authModal");
+      } catch (err) {
+        errBox.textContent = err.message || "Authentication failed";
+        errBox.classList.remove("hidden");
+      }
+    }
+
+    // Maps
+    function initPickerMap() {
+      if (pickerMap || typeof L === "undefined") return;
+      pickerMap = L.map("pickerMap").setView([pickedCoords.lat, pickedCoords.lng], 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap"
+      }).addTo(pickerMap);
+      pickerMarker = L.circleMarker([pickedCoords.lat, pickedCoords.lng], {
+        radius: 9,
+        color: "#0a1628",
+        weight: 2,
+        fillColor: "#14b8a6",
+        fillOpacity: 0.9
+      }).addTo(pickerMap);
+      pickerMap.on("click", (e) => {
+        pickedCoords = { lat: Number(e.latlng.lat.toFixed(5)), lng: Number(e.latlng.lng.toFixed(5)) };
+        pickedAccuracyM = null;
+        pickedLocationSource = "manually-pinned";
+        pickerMarker.setLatLng([pickedCoords.lat, pickedCoords.lng]);
+        document.getElementById("coordLabel").textContent = pickedCoords.lat + ", " + pickedCoords.lng;
+        const gpsStatus = document.getElementById("gpsStatus");
+        if (gpsStatus) gpsStatus.textContent = "Manual map pin selected. Tap Use My GPS to capture your device location.";
+      });
+    }
+
+    function initFullMap() {
+      if (fullMap || typeof L === "undefined") return;
+      fullMap = L.map("fullMap").setView([13.6288, 79.4192], 13);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: "&copy; OpenStreetMap contributors"
+      }).addTo(fullMap);
+      fullMapLayer = L.layerGroup().addTo(fullMap);
+    }
+
+    function renderFullMapMarkers() {
+      if (!fullMapLayer) return;
+      fullMapLayer.clearLayers();
+      const sev = document.getElementById("mapFilterSev").value;
+      const st = document.getElementById("mapFilterStatus").value;
+      complaints.forEach((c) => {
+        if (!c.lat || !c.lng) return;
+        if (sev !== "All" && c.severity !== sev) return;
+        if (st !== "All" && c.status !== st) return;
+        const fill = c.severity === "Critical" ? "#dc2626" : c.severity === "High" ? "#ea580c" : "#0d9488";
+        L.circleMarker([c.lat, c.lng], {
+          radius: 9,
+          color: "#0a1628",
+          weight: 2,
+          fillColor: fill,
+          fillOpacity: 0.92
+        })
+          .bindPopup(
+            `<div style="min-width:190px;font-family:-apple-system,sans-serif">
+              <div style="font-weight:700;color:#0d9488">${escapeHtml(c.id)}</div>
+              <div style="font-weight:600;color:#0f172a;margin:3px 0">${escapeHtml(c.title)}</div>
+              <div style="font-size:12px;color:#475569">${escapeHtml(c.category)} • <b>${escapeHtml(c.severity)}</b></div>
+              <div style="font-size:12px;color:#64748b;margin-top:2px">Status: ${escapeHtml(c.status)} | ${escapeHtml(c.ward || "")}</div>
+            </div>`
+          )
+          .addTo(fullMapLayer);
+      });
+    }
+
+    function requestDeviceLocation() {
+      return new Promise((resolve, reject) => {
+        if (!window.isSecureContext) {
+          reject(new Error("GPS requires HTTPS. Open the deployed site using its secure https:// address."));
+          return;
+        }
+        if (!navigator.geolocation) {
+          reject(new Error("Location is not supported by this browser."));
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(resolve, (error) => {
+          const messages = {
+            1: "Location permission was denied. Allow location access in your browser settings.",
+            2: "Your device could not determine a location. Check GPS and try again.",
+            3: "Location request timed out. Move to an open area and try again."
+          };
+          reject(new Error(messages[error.code] || "Unable to get your location."));
+        }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+      });
+    }
+
+    async function useGPS() {
+      const button = document.getElementById("gpsBtn");
+      const status = document.getElementById("gpsStatus");
+      if (button) { button.disabled = true; button.textContent = "Locating…"; }
+      if (status) status.textContent = "Requesting permission and finding your device location…";
+      try {
+        const pos = await requestDeviceLocation();
+        pickedCoords = {
+          lat: Number(pos.coords.latitude.toFixed(6)),
+          lng: Number(pos.coords.longitude.toFixed(6))
+        };
+        pickedAccuracyM = Math.round(pos.coords.accuracy);
+        pickedLocationSource = "device-gps";
+        document.getElementById("coordLabel").textContent = pickedCoords.lat + ", " + pickedCoords.lng;
+        if (pickerMap && pickerMarker) {
+          pickerMarker.setLatLng([pickedCoords.lat, pickedCoords.lng]);
+          pickerMap.setView([pickedCoords.lat, pickedCoords.lng], 17);
+        }
+        if (status) status.textContent = `GPS location captured · accuracy about ${pickedAccuracyM} m. Check the pin before submitting.`;
+        showToast("GPS coordinates captured");
+      } catch (error) {
+        if (status) status.textContent = error.message;
+        showToast(error.message, true);
+      } finally {
+        if (button) { button.disabled = false; button.textContent = "📍 Use My GPS"; }
+      }
+    }
+
+    async function locateMeOnMap() {
+      try {
+        showToast("Finding your current location…");
+        const pos = await requestDeviceLocation();
+        const lat = Number(pos.coords.latitude.toFixed(6));
+        const lng = Number(pos.coords.longitude.toFixed(6));
+        if (!fullMap) initFullMap();
+        if (!fullMap) throw new Error("The map is not ready yet. Open the map tab and try again.");
+        fullMap.setView([lat, lng], 17);
+        if (userLocationMarker) fullMap.removeLayer(userLocationMarker);
+        userLocationMarker = L.circleMarker([lat, lng], {
+          radius: 10, color: "#ffffff", weight: 3,
+          fillColor: "#2563eb", fillOpacity: 1
+        }).addTo(fullMap).bindPopup(`Your device location<br>Accuracy: about ${Math.round(pos.coords.accuracy)} m`);
+        userLocationMarker.openPopup();
+        showToast("Map centered on your current location");
+      } catch (error) {
+        showToast(error.message, true);
+      }
+    }
+
+    // Compress uploaded photo so it fits comfortably inside a Firestore document
+    function handlePhotoUpload(e) {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxW = 800;
+          const scale = Math.min(1, maxW / img.width);
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          photoDataUrl = canvas.toDataURL("image/jpeg", 0.72);
+          document.getElementById("photoPreview").src = photoDataUrl;
+          document.getElementById("photoPreviewWrap").classList.remove("hidden");
+          document.getElementById("photoLabel").textContent = "✓ Photo Attached (Tap to change)";
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function analyzeCivicText(title, desc, lang) {
+      const text = (title + " " + desc).toLowerCase();
+      let category = "Roads & Potholes", department = "Public Works", severity = "Medium", priority = 65;
+
+      if (/water|pipe|leak|burst|tap/.test(text)) {
+        category = "Water Supply & Leaks"; department = "Water Board";
+        severity = /burst|flood|main/.test(text) ? "Critical" : "High";
+        priority = severity === "Critical" ? 94 : 83;
+      } else if (/garbage|waste|trash|bin|dump|smell/.test(text)) {
+        category = "Waste Management"; department = "Sanitation";
+        severity = "Medium"; priority = 70;
+      } else if (/light|dark|power|pole|lamp/.test(text)) {
+        category = "Streetlights & Power"; department = "Electrical";
+        severity = "High"; priority = 80;
+      } else if (/drain|sewer|flood|stagnant|gutter/.test(text)) {
+        category = "Drainage & Flooding"; department = "Stormwater";
+        severity = "High"; priority = 82;
+      } else if (/pothole|road|crack|highway|bridge/.test(text)) {
+        category = "Roads & Potholes"; department = "Public Works";
+        severity = /deep|accident|skid|huge/.test(text) ? "High" : "Medium";
+        priority = severity === "High" ? 86 : 67;
+      }
+
+      const isDup = complaints.some(
+        (c) => c.category === category && c.title.toLowerCase().split(" ").some((w) => w.length > 4 && text.includes(w))
+      );
+
+      return {
+        category,
+        department,
+        severity,
+        priority_score: priority,
+        is_duplicate: isDup,
+        source: "Demo Simulation",
+        ai_summary: `[${lang} → EN] Classified as ${category} (${severity} severity). Routed to ${department}. ${
+          isDup ? "Potential duplicate of an existing open report." : "Verified as a unique civic incident."
+        }`
+      };
+    }
+
+    function runAITriage() {
+      const title = document.getElementById("fTitle").value.trim();
+      const desc = document.getElementById("fDesc").value.trim();
+      const lang = document.getElementById("fLanguage").value;
+      const errBox = document.getElementById("formError");
+      if (!title || !desc) {
+        errBox.textContent = "Enter both Issue Title and Description before running AI triage.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+      errBox.classList.add("hidden");
+      const btn = document.getElementById("aiBtn");
+      btn.textContent = "Analyzing...";
+      setTimeout(() => {
+        currentAIResult = analyzeCivicText(title, desc, lang);
+        const box = document.getElementById("aiResultBox");
+        box.innerHTML = `
+          <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:8px;">
+            <span class="badge badge-amber">${currentAIResult.source}</span>
+            <span class="badge badge-teal">${currentAIResult.category}</span>
+            <span class="badge badge-navy">Dept: ${currentAIResult.department}</span>
+            <span class="badge ${currentAIResult.severity === 'Critical' ? 'badge-red' : 'badge-blue'}">
+              ${currentAIResult.severity} (${currentAIResult.priority_score}/100)
+            </span>
+          </div>
+          <p style="color:var(--text-secondary);">${escapeHtml(currentAIResult.ai_summary)}</p>
+        `;
+        box.classList.remove("hidden");
+        btn.textContent = "Re-Analyze";
+        showToast("AI Civic Intelligence complete");
+      }, 420);
+    }
+
+    async function submitComplaint(e) {
+      e.preventDefault();
+      // Live Firestore writes require a signed-in Firebase account.
+      if (mode === "LIVE" && (!fbAuth || !fbAuth.currentUser)) {
+        showToast("Please sign in before submitting a complaint.", true);
+        openModal("authModal");
+        return;
+      }
+      const errBox = document.getElementById("formError");
+      errBox.classList.add("hidden");
+
+      const title = document.getElementById("fTitle").value.trim();
+      const desc = document.getElementById("fDesc").value.trim();
+      const ward = document.getElementById("fWard").value;
+      const lang = document.getElementById("fLanguage").value;
+
+      if (title.length < 5 || desc.length < 10) {
+        errBox.textContent = "Title must be at least 5 characters and description at least 10 characters.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      const ai = currentAIResult || analyzeCivicText(title, desc, lang);
+      const newId = "UIQ-2026-" + Math.floor(1000 + Math.random() * 9000);
+      const record = {
+        id: newId,
+        user_id: currentUser?.id || null,
+        citizen_name: currentUser?.name || "Citizen",
+        title,
+        description: desc,
+        category: ai.category,
+        department: ai.department,
+        severity: ai.severity,
+        priority_score: ai.priority_score,
+        status: "Pending",
+        ward,
+        lat: pickedCoords.lat,
+        lng: pickedCoords.lng,
+        location_accuracy_m: pickedAccuracyM,
+        location_source: pickedLocationSource,
+        image_url: photoDataUrl || "",
+        language: lang,
+        ai_summary: ai.ai_summary,
+        is_duplicate: ai.is_duplicate,
+        created_at: new Date().toISOString()
+      };
+
+      if (mode === "LIVE" && fbDb) {
+        try {
+          await fbDb.collection("complaints").doc(newId).set(record);
+        } catch (err) {
+          showToast("Firebase save failed: " + err.message, true);
+          return;
+        }
+      } else {
+        complaints.unshift(record);
+      }
+
+      document.getElementById("complaintForm").reset();
+      pickedAccuracyM = null;
+      pickedLocationSource = "default-map-center";
+      const gpsStatusAfterSubmit = document.getElementById("gpsStatus");
+      if (gpsStatusAfterSubmit) gpsStatusAfterSubmit.textContent = "GPS not used yet. You can also tap the map to pin the issue location.";
+      photoDataUrl = "";
+      currentAIResult = null;
+      document.getElementById("photoPreviewWrap").classList.add("hidden");
+      document.getElementById("photoLabel").textContent = "📷 Upload Photo (Auto-compressed)";
+      document.getElementById("aiResultBox").classList.add("hidden");
+      document.getElementById("trackInput").value = newId;
+
+      renderAll();
+      showToast("Submitted! Tracking ID: " + newId);
+    }
+
+    async function updateTicket(id, field, value) {
+      if (mode === "LIVE" && fbDb) {
+        try {
+          await fbDb.collection("complaints").doc(id).update({ [field]: value });
+        } catch (err) {
+          showToast("Update failed: " + err.message, true);
+          return;
+        }
+      } else {
+        complaints = complaints.map((c) => (c.id === id ? { ...c, [field]: value } : c));
+        renderAll();
+      }
+      showToast("Updated " + id);
+    }
+
+    function exportCSV() {
+      const headers = ["ID", "Title", "Category", "Department", "Severity", "Priority", "Status", "Ward", "Created"];
+      const rows = complaints.map((c) => [
+        c.id,
+        `"${(c.title || "").replace(/"/g, '""')}"`,
+        c.category,
+        c.department,
+        c.severity,
+        c.priority_score,
+        c.status,
+        c.ward,
+        c.created_at
+      ]);
+      const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "urbaniq-civic-report.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("CSV report exported");
+    }
+
+    function statusBadgeClass(st) {
+      if (st === "Resolved") return "badge-green";
+      if (st === "Pending") return "badge-amber";
+      return "badge-blue";
+    }
+    function sevBadgeClass(sev) {
+      if (sev === "Critical") return "badge-red";
+      if (sev === "High") return "badge-amber";
+      return "badge-teal";
+    }
+    function escapeHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+    }
+
+    function renderTrackResult() {
+      const q = document.getElementById("trackInput").value.trim().toLowerCase();
+      const box = document.getElementById("trackResult");
+      if (!q) { box.innerHTML = ""; return; }
+      const match = complaints.find((c) => c.id.toLowerCase() === q);
+      if (!match) {
+        box.innerHTML = `<div style="font-size:12px; color:var(--text-muted);">No ticket matched that ID.</div>`;
+        return;
+      }
+      box.innerHTML = `
+        <div class="ticket-item" style="background:var(--teal-50); border-color:var(--teal-100);">
+          <div class="ticket-top">
+            <span class="ticket-id">${escapeHtml(match.id)}</span>
+            <span class="badge ${statusBadgeClass(match.status)}">${escapeHtml(match.status)}</span>
+          </div>
+          <div class="ticket-title">${escapeHtml(match.title)}</div>
+          <div class="ticket-meta">${escapeHtml(match.department)} • ${escapeHtml(match.ward)} • ${escapeHtml(match.severity)}</div>
+        </div>
+      `;
+    }
+
+    function renderAdminTable() {
+      const q = (document.getElementById("adminSearch")?.value || "").toLowerCase();
+      const filtered = complaints.filter((c) =>
+        !q || c.id.toLowerCase().includes(q) || c.title.toLowerCase().includes(q) || (c.ward || "").toLowerCase().includes(q)
+      );
+      const tbody = document.getElementById("adminTableBody");
+      tbody.innerHTML = filtered.map((c) => `
+        <tr>
+          <td class="ticket-id">${escapeHtml(c.id)}</td>
+          <td>
+            <div style="font-weight:600; color:var(--navy-900);">${escapeHtml(c.title)}</div>
+            <div style="font-size:11px; color:var(--text-muted);">${escapeHtml(c.ward)}</div>
+          </td>
+          <td>
+            <select class="select" style="padding:5px 8px; font-size:12px;" onchange="updateTicket('${escapeHtml(c.id)}', 'department', this.value)">
+              ${DEPARTMENTS.map((d) => `<option ${d === c.department ? "selected" : ""}>${d}</option>`).join("")}
+            </select>
+          </td>
+          <td><span class="badge ${sevBadgeClass(c.severity)}">${escapeHtml(c.severity)} (${c.priority_score})</span></td>
+          <td>
+            <select class="select" style="padding:5px 8px; font-size:12px;" onchange="updateTicket('${escapeHtml(c.id)}', 'status', this.value)">
+              ${STATUSES.map((s) => `<option ${s === c.status ? "selected" : ""}>${s}</option>`).join("")}
+            </select>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderAll() {
+      const total = complaints.length;
+      const pending = complaints.filter((c) => c.status === "Pending").length;
+      const active = complaints.filter((c) => c.status === "Assigned" || c.status === "In Progress").length;
+      const resolved = complaints.filter((c) => c.status === "Resolved").length;
+      const highPri = complaints.filter((c) => c.severity === "Critical" || c.severity === "High").length;
+      const rate = total ? Math.round((resolved / total) * 100) : 0;
+
+      document.getElementById("heroTotal").textContent = total;
+      document.getElementById("heroResolved").textContent = rate + "%";
+      document.getElementById("heroCritical").textContent = highPri;
+      document.getElementById("kpiTotal").textContent = total;
+      document.getElementById("kpiPending").textContent = pending;
+      document.getElementById("kpiActive").textContent = active;
+      document.getElementById("kpiResolved").textContent = resolved;
+      document.getElementById("impactScore").textContent = rate + "%";
+      document.getElementById("impactMeta").textContent = `${resolved} of ${total} civic complaints resolved with transparent citizen tracking.`;
+
+      document.getElementById("recentCountLabel").textContent = `${total} civic reports tracked`;
+      document.getElementById("recentTickets").innerHTML = complaints.map((c) => `
+        <div class="ticket-item">
+          <div class="ticket-top">
+            <span class="ticket-id">${escapeHtml(c.id)}</span>
+            <span class="badge ${statusBadgeClass(c.status)}">${escapeHtml(c.status)}</span>
+          </div>
+          <div class="ticket-title">${escapeHtml(c.title)}</div>
+          <div class="ticket-meta">${escapeHtml(c.category)} • ${escapeHtml(c.ward)} • Priority ${c.priority_score}</div>
+        </div>
+      `).join("");
+
+      const byDept = {}, byWard = {};
+      complaints.forEach((c) => {
+        byDept[c.department] = (byDept[c.department] || 0) + 1;
+        byWard[c.ward || "Central"] = (byWard[c.ward || "Central"] || 0) + 1;
+      });
+
+      document.getElementById("deptChart").innerHTML = Object.entries(byDept).map(([k, v]) => `
+        <div class="bar-row">
+          <div class="bar-head"><span>${escapeHtml(k)}</span><strong>${v}</strong></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round((v / Math.max(1, total)) * 100)}%"></div></div>
+        </div>
+      `).join("");
+
+      document.getElementById("wardChart").innerHTML = Object.entries(byWard).map(([k, v]) => `
+        <div class="bar-row">
+          <div class="bar-head"><span>${escapeHtml(k)}</span><strong>${v}</strong></div>
+          <div class="bar-track"><div class="bar-fill navy" style="width:${Math.round((v / Math.max(1, total)) * 100)}%"></div></div>
+        </div>
+      `).join("");
+
+      const topWard = Object.entries(byWard).sort((a, b) => b[1] - a[1])[0];
+      if (topWard) {
+        document.getElementById("hotspotWard").textContent = topWard[0];
+        document.getElementById("hotspotCount").textContent = `${topWard[1]} active civic reports clustered in this zone`;
+      }
+
+      renderTrackResult();
+      renderAdminTable();
+      if (fullMap) renderFullMapMarkers();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      initPickerMap();
+      if (mode === "LIVE" && initFirebase()) {
+        subscribeLiveComplaints();
+      } else {
+        mode = "DEMO";
+      }
+      updateModeUI();
+      renderAll();
+    });
+  </script>
+</body>
+</html>

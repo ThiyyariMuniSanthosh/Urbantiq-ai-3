@@ -1,0 +1,15 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /complaints/{complaintId} {
+      // Complaint records are publicly readable for the civic map and tracker.
+      allow read: if true;
+
+      // Require a signed-in Firebase user to create or update a complaint.
+      allow create, update: if request.auth != null;
+
+      // Deletion is disabled from the client app.
+      allow delete: if false;
+    }
+  }
+}
